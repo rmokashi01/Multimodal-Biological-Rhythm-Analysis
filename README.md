@@ -5,8 +5,63 @@ This repository implements the first phase of the **Multimodal Biological Rhythm
 
 ---
 
+## 👨‍🎓 Author Credentials
+*   **Author**: **Rehan I. Mokashi**
+*   **Position**: First Year M.Tech Student
+*   **Affiliation**: [Government College of Engineering, Karad](http://www.gcekarad.ac.in/)
+*   **AI Partner**: Antigravity AI (Google DeepMind Team)
+
+---
+
+## 📊 System Architecture & Data Flow
+GitHub will render the following architecture diagram natively:
+
+```mermaid
+graph TD
+    %% Datasets
+    subgraph Datasets
+        CB["CapnoBase (Main)"]
+        BD["BIDMC (Validation)"]
+        WD["WESAD (Multimodal)"]
+    end
+
+    %% Phase 1 & 2
+    CB -->|PPG + ECG + Resp| DL["Data Loader (utils/data_loader.py)"]
+    BD -->|ECG + Resp| DL
+    WD -->|ECG + Resp + EDA + ACC| DL
+
+    %% Phase 3
+    DL --> Pre["Signal Preprocessing (preprocessing/signal_cleaning.py)"]
+    Pre -->|Clean PPG| CE["CorrEncoder (models/correncoder.py)"]
+    Pre -->|Clean ECG / EDA / ACC| FE["Feature Extraction (features/extract_features.py)"]
+
+    %% Phase 4
+    CE -->|Reconstructed Respiration| FE
+    Pre -->|Clean Ground Truth Resp| FE
+
+    %% Phase 5 & 6
+    subgraph "Feature & Rhythm Analysis"
+        FE -->|Time-Series Signals| PR["Periodic & Aperiodic Characterization"]
+        FE -->|Respiration Waves| ME["Entropy & Fractal Analysis"]
+        FE -->|ECG + Resp| CRC["Cardio-Respiratory Coupling"]
+        
+        PR -->|Rate, Breath Intervals, Amplitude| FV["Unified Rhythm Feature Vector (Phi)"]
+        ME -->|SampEn, MSE, DFA, Hurst| FV
+        CRC -->|Phase Sync, Coherence| FV
+    end
+
+    %% Phase 7 & 8
+    FV --> Clf["Rhythm Classifier (classification/model.py)"]
+    Clf -->|Random Forest / SVM| Pred["Biological & Functional Interpretation"]
+
+    %% Interpretation Outputs
+    Pred -->|Outputs| Out["Stress Levels, Pathological States, Biomarkers"]
+```
+
+---
+
 ## 🚀 Key Project Achievements (Phase 1)
-*   **Deep Bottleneck 1D CNN Autoencoder**: Features a 3-layer convolutional autoencoder (large kernel sizes 31, 15, and 7) designed to track slow-frequency respiratory rhythm (4–6 seconds cycles) while completely ignoring high-frequency cardiac heartbeat noise.
+*   **Deep Bottleneck 1D CNN Autoencoder**: Features a 3-layer convolutional autoencoder (large kernel sizes 31, 15, and 7) designed to track slow-frequency respiratory rhythm (4–6 seconds cycles) while completely ignoring high-frequency heartbeat noise.
 *   **Robust Signal Preprocessing**: Includes robust NaN-handling, z-score normalization, and Second-Order Sections (SOS) bandpass filtering to prevent signal instability.
 *   **Automated PowerPoint Progress Report**: Integrated presentation generator to build standard M.Tech progress slides automatically.
 *   **Clinical Benchmark Validation**: Trained and tested on CapnoBase clinical datasets.
@@ -43,7 +98,7 @@ This repository implements the first phase of the **Multimodal Biological Rhythm
    ```
 2. Install dependencies:
    ```bash
-   pip install torch numpy scipy matplotlib python-ppx h5py
+   pip install torch numpy scipy matplotlib python-pptx h5py
    ```
 3. *Note on Datasets*: Large MATLAB `.mat` files are excluded from this repository via `.gitignore` to meet GitHub upload limits. Ensure clinical CapnoBase subject files are placed inside `data/capnobase/` locally.
 
