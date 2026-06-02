@@ -1,42 +1,99 @@
 import torch
 import torch.nn as nn
 
+
 class CorrEncoder(nn.Module):
     def __init__(self):
         super(CorrEncoder, self).__init__()
-        
-        # ⬇️ ENCODER: Data ko compress karega taaki heartbeat (high-freq) remove ho jaye
+
+        # Encoder:
+        # Compresses the input PPG signal and extracts
+        # low-frequency respiratory information while
+        # reducing high-frequency cardiac components.
         self.encoder = nn.Sequential(
-            # Layer 1: Bada kernel (31) taaki long-term trend pakde
-            nn.Conv1d(in_channels=1, out_channels=16, kernel_size=31, padding=15),
+
+            # Layer 1:
+            # Large kernel size captures long-term trends
+            # present in the signal.
+            nn.Conv1d(
+                in_channels=1,
+                out_channels=16,
+                kernel_size=31,
+                padding=15
+            ),
             nn.ReLU(),
-            nn.MaxPool1d(kernel_size=2),  # Length half ho jayegi
-            
-            # Layer 2
-            nn.Conv1d(16, 32, kernel_size=15, padding=7),
+
+            # Downsample by a factor of 2
+            nn.MaxPool1d(kernel_size=2),
+
+            # Layer 2:
+            # Learns higher-level temporal features.
+            nn.Conv1d(
+                in_channels=16,
+                out_channels=32,
+                kernel_size=15,
+                padding=7
+            ),
             nn.ReLU(),
-            nn.MaxPool1d(2),  # Length 1/4th ho jayegi
-            
-            # Layer 3: Bottleneck (Yahan saans ka pattern extract hoga)
-            nn.Conv1d(32, 64, kernel_size=7, padding=3),
+
+            # Further downsampling
+            nn.MaxPool1d(kernel_size=2),
+
+            # Layer 3 (Bottleneck):
+            # Encodes the most important respiratory patterns.
+            nn.Conv1d(
+                in_channels=32,
+                out_channels=64,
+                kernel_size=7,
+                padding=3
+            ),
             nn.ReLU(),
-            nn.MaxPool1d(2)   # Length 1/8th ho jayegi
+
+            # Final compression stage
+            nn.MaxPool1d(kernel_size=2)
         )
-        
-        # ⬆️ DECODER: Compressed breathing pattern ko wapas original size mein layega
+
+        # Decoder:
+        # Reconstructs the respiration waveform from the
+        # compressed latent representation.
         self.decoder = nn.Sequential(
-            nn.ConvTranspose1d(in_channels=64, out_channels=32, kernel_size=2, stride=2),
+
+            # Upsample by a factor of 2
+            nn.ConvTranspose1d(
+                in_channels=64,
+                out_channels=32,
+                kernel_size=2,
+                stride=2
+            ),
             nn.ReLU(),
-            
-            nn.ConvTranspose1d(32, 16, kernel_size=2, stride=2),
+
+            # Upsample by another factor of 2
+            nn.ConvTranspose1d(
+                in_channels=32,
+                out_channels=16,
+                kernel_size=2,
+                stride=2
+            ),
             nn.ReLU(),
-            
-            # Final output layer (No ReLU here, taaki negative values bhi aa sakein)
-            nn.ConvTranspose1d(16, 1, kernel_size=2, stride=2)
+
+            # Final reconstruction layer
+            # No activation function is used so that the
+            # output can contain both positive and negative values.
+            nn.ConvTranspose1d(
+                in_channels=16,
+                out_channels=1,
+                kernel_size=2,
+                stride=2
+            )
         )
 
     def forward(self, x):
-        # x -> Encoder -> Decoder -> Reconstructed Breathing Wave
+        """
+        Forward pass:
+        Input Signal -> Encoder -> Latent Representation
+                     -> Decoder -> Reconstructed Respiration Signal
+        """
         encoded = self.encoder(x)
         decoded = self.decoder(encoded)
+
         return decoded
